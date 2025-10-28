@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-config
+  namespace: hermes
+  labels:
+    app: hermes
+data:
+  HERMES_SERVER_ADDR: ":8080"
+  HERMES_REDIS_ADDR: "redis.hermes.svc.cluster.local:6379"
+  HERMES_REDIS_TTL: "10m"
+  HERMES_CASSANDRA_HOSTS: "cassandra-0.cassandra.hermes.svc.cluster.local:9042,cassandra-1.cassandra.hermes.svc.cluster.local:9042"
+  HERMES_CASSANDRA_KEYSPACE: "hermes"
+  HERMES_CASSANDRA_TABLE: "records"
+  HERMES_CASSANDRA_CONSISTENCY: "LOCAL_QUORUM"
+  HERMES_CASSANDRA_NUM_CONNS: "8"
+  HERMES_CACHE_L1_CAPACITY: "16384"
+  HERMES_CACHE_L1_TTL: "60s"

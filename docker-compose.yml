@@ -1,0 +1,65 @@
+services:
+  cassandra:
+    image: cassandra:4.1
+    container_name: hermes-cassandra
+    ports:
+      - "9042:9042"
+    environment:
+      CASSANDRA_CLUSTER_NAME: hermes-cluster
+      MAX_HEAP_SIZE: 512M
+      HEAP_NEWSIZE: 128M
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  # One-shot job that applies the keyspace/table schema once Cassandra is ready.
+  cassandra-init:
+    image: cassandra:4.1
+    container_name: hermes-cassandra-init
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ./deploy/schema.cql:/schema.cql:ro
+    entrypoint: ["cqlsh", "cassandra", "-f", "/schema.cql"]
+    restart: "no"
+
+  redis:
+    image: redis:7-alpine
+    container_name: hermes-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  hermes:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hermes
+    depends_on:
+      cassandra-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      HERMES_SERVER_ADDR: ":8080"
+      HERMES_REDIS_ADDR: "redis:6379"
+      HERMES_CASSANDRA_HOSTS: "cassandra:9042"
+      HERMES_CASSANDRA_KEYSPACE: "hermes"
+      HERMES_CASSANDRA_TABLE: "records"
+      HERMES_CASSANDRA_CONSISTENCY: "ONE"
+      HERMES_CACHE_L1_CAPACITY: "8192"
+
+volumes:
+  cassandra-data:

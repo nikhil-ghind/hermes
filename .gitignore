@@ -1,0 +1,63 @@
+# ---- Go binaries / build output ----
+bin/
+build/
+dist/
+hermes
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.out
+
+# ---- Go test / coverage ----
+*.test
+coverage.out
+coverage.html
+*.cover
+profile.cov
+cpu.prof
+mem.prof
+
+# ---- Go modules (vendor optional; uncomment to ignore) ----
+# vendor/
+
+# ---- IDE / editor ----
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+.\#*
+\#*\#
+
+# ---- OS files ----
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- Secrets / local config ----
+.env
+.env.*
+!.env.example
+config.yaml
+config.yml
+config.local.*
+*.pem
+*.key
+secrets/
+*.secret
+
+# ---- Local data / docker volumes ----
+data/
+tmp/

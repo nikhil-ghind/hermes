@@ -1,0 +1,28 @@
+# Example Hermes configuration. Copy to config.yaml and adjust.
+# Every value here can also be overridden by an environment variable
+# (see the README configuration table). Environment variables win over file.
+
+server:
+  addr: ":8080"
+  read_timeout: 5s
+  write_timeout: 10s
+  shutdown_timeout: 15s
+
+redis:
+  addr: "localhost:6379"
+  password: ""
+  db: 0
+  ttl: 10m
+
+cassandra:
+  hosts:
+    - "localhost:9042"
+  keyspace: "hermes"
+  table: "records"
+  consistency: "QUORUM"
+  timeout: 5s
+  num_conns: 4
+
+cache:
+  l1_capacity: 4096
+  l1_ttl: 1m
