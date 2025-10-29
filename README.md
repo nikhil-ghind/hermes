@@ -23,28 +23,59 @@ fine-grained synchronization.
 Hermes is a classic multi-level cache. A request enters at the fastest, smallest
 tier and falls through to slower, larger, more authoritative tiers on a miss.
 
+```mermaid
+flowchart TB
+    client["HTTP client"]
+
+    subgraph api["internal/api (chi router)"]
+        routes["GET/PUT/DELETE /v1/cache/{key}<br/>GET /healthz , GET /metrics"]
+    end
+
+    subgraph svc["internal/service"]
+        core["Service<br/>read-through and write-through"]
+        coal["Coalescer<br/>mutex + per-key WaitGroup"]
+    end
+
+    met["internal/metrics<br/>atomic hit, miss, error, latency counters"]
+    l1["L1 &#8212; internal/cache.LRU<br/>map + doubly-linked list, one mutex"]
+    l2["L2 &#8212; Redis (go-redis)<br/>shared across instances, TTL"]
+    l3["L3 &#8212; Cassandra (gocql)<br/>durable system of record"]
+
+    client --> routes --> core
+    core -->|"1. lookup"| l1
+    core -->|"2. on L1 miss"| coal
+    coal -->|"single fetch per key"| l2
+    coal -->|"on L2 miss"| l3
+    l3 -.->|"back-fill with redisTTL"| l2
+    l2 -.->|"back-fill"| l1
+    core --> met
 ```
-                         ┌──────────────────────────┐
-   HTTP client  ───────► │   REST API (chi router)   │
-                         │  GET/PUT/DELETE /v1/cache │
-                         └─────────────┬─────────────┘
-                                       │
-                                       ▼
-                         ┌──────────────────────────┐
-                         │     service.Service       │
-                         │  read-through / write-thru │
-                         │  + request coalescer       │
-                         │  + metrics counters        │
-                         └─────────────┬─────────────┘
-                  hit ◄────────────────┤
-                                       ▼
-   ┌───────────────┐   miss   ┌───────────────┐   miss   ┌────────────────┐
-   │  L1: in-proc  │ ───────► │   L2: Redis   │ ───────► │ L3: Cassandra   │
-   │   LRU cache   │          │  (shared,     │          │  (durable       │
-   │ (ns, per-pod) │ ◄─────── │   cluster)    │ ◄─────── │   system of     │
-   └───────────────┘ backfill └───────────────┘ backfill │   record)       │
-                                                          └────────────────┘
+
+The read path is the interesting one: a wave of concurrent misses for the same
+key collapses into exactly one backing fetch, and the value it finds is promoted
+into every faster tier on the way back up.
+
+<img src="docs/cache-fallthrough.svg" alt="Animated three-tier cache fall-through with request coalescing and back-fill" width="880">
+
+Writes run the opposite way &#8212; Cassandra first, then Redis, then the local LRU:
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as Service
+    participant L3 as Cassandra
+    participant L2 as Redis
+    participant L1 as LRU
+
+    C->>S: PUT /v1/cache/{key}
+    S->>L3: Put (authoritative write)
+    L3-->>S: ok
+    S->>L2: Set with TTL
+    Note over S,L2: failure here is non-fatal, counted in the error metric
+    S->>L1: Put
+    S-->>C: 204 No Content
 ```
+
 
 | Tier | Backing            | Scope          | Latency      | Purpose                              |
 |------|--------------------|----------------|--------------|--------------------------------------|

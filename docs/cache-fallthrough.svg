@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 330" width="880" height="330" role="img" aria-label="Animated three-tier cache fall-through with request coalescing">
+  <title>Hermes read path: L1 to L2 to L3 fall-through with coalescing and back-fill</title>
+
+  <text x="20" y="28" font-family="Helvetica, Arial, sans-serif" font-size="17" font-weight="bold" fill="#8b949e">Hermes read path &#8212; three tiers, one backing fetch</text>
+  <text x="20" y="48" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#8b949e">Blue = the caller that does the work. Grey = callers parked on the coalescer. Amber = back-fill on the way up.</text>
+
+  <!-- static boxes -->
+  <g fill="none" stroke="#8b949e" stroke-width="1.5">
+    <rect x="20" y="120" width="120" height="76" rx="6"/>
+    <rect x="190" y="120" width="120" height="76" rx="6"/>
+    <rect x="360" y="120" width="120" height="76" rx="6"/>
+    <rect x="530" y="120" width="120" height="76" rx="6"/>
+    <rect x="700" y="120" width="120" height="76" rx="6"/>
+  </g>
+  <g font-family="Helvetica, Arial, sans-serif" text-anchor="middle" fill="#8b949e">
+    <text x="80" y="147" font-size="13">HTTP GET</text>
+    <text x="80" y="166" font-size="11">chi router</text>
+    <text x="80" y="183" font-size="11">/v1/cache/{key}</text>
+
+    <text x="250" y="147" font-size="13" font-weight="bold">L1</text>
+    <text x="250" y="166" font-size="11">in-process LRU</text>
+    <text x="250" y="183" font-size="11">map + list, ns</text>
+
+    <text x="420" y="147" font-size="13" font-weight="bold">Coalescer</text>
+    <text x="420" y="166" font-size="11">mutex + per-key</text>
+    <text x="420" y="183" font-size="11">WaitGroup</text>
+
+    <text x="590" y="147" font-size="13" font-weight="bold">L2</text>
+    <text x="590" y="166" font-size="11">Redis, shared</text>
+    <text x="590" y="183" font-size="11">TTL on write</text>
+
+    <text x="760" y="147" font-size="13" font-weight="bold">L3</text>
+    <text x="760" y="166" font-size="11">Cassandra</text>
+    <text x="760" y="183" font-size="11">system of record</text>
+  </g>
+
+  <!-- static connectors -->
+  <g stroke="#8b949e" stroke-width="1" stroke-dasharray="3 4">
+    <path d="M 140 158 H 190" fill="none"/>
+    <path d="M 310 158 H 360" fill="none"/>
+    <path d="M 480 158 H 530" fill="none"/>
+    <path d="M 650 158 H 700" fill="none"/>
+  </g>
+
+  <!-- active highlights -->
+  <rect x="190" y="120" width="120" height="76" rx="6" fill="none" stroke="#c9922f" stroke-width="3">
+    <animate attributeName="opacity" values="0;1;0;0;0;1;1" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="360" y="120" width="120" height="76" rx="6" fill="none" stroke="#c9922f" stroke-width="3">
+    <animate attributeName="opacity" values="0;0;1;0;0;0;0" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="530" y="120" width="120" height="76" rx="6" fill="none" stroke="#c9922f" stroke-width="3">
+    <animate attributeName="opacity" values="0;0;0;1;0;1;1" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="700" y="120" width="120" height="76" rx="6" fill="none" stroke="#c9922f" stroke-width="3">
+    <animate attributeName="opacity" values="0;0;0;0;1;0;0" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- hit / miss badges -->
+  <text x="250" y="215" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#d76b5c">miss
+    <animate attributeName="opacity" values="0;1;1;1;1;0;0" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+  </text>
+  <text x="590" y="215" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#d76b5c">miss
+    <animate attributeName="opacity" values="0;0;0;1;1;0;0" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+  </text>
+  <text x="760" y="215" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#3f9e6c">hit
+    <animate attributeName="opacity" values="0;0;0;0;1;1;1" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+  </text>
+
+  <!-- leader request -->
+  <circle r="7" fill="#6ea8fe" stroke="#a8c8ff" stroke-width="1">
+    <animateMotion path="M 80 158 H 760" dur="12s" repeatCount="indefinite" calcMode="linear"
+      keyTimes="0;0.10;0.20;0.28;0.36;0.44;0.52;0.60;1"
+      keyPoints="0;0.25;0.25;0.5;0.5;0.75;0.75;1;1"/>
+    <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.70;0.74;1" dur="12s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- two parked callers -->
+  <circle r="6" fill="#8b949e">
+    <animateMotion path="M 80 104 H 420" dur="12s" repeatCount="indefinite" calcMode="linear"
+      keyTimes="0;0.12;0.22;0.30;1" keyPoints="0;0.5;0.5;1;1"/>
+    <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.88;0.92;1" dur="12s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="6" fill="#8b949e">
+    <animateMotion path="M 80 212 H 420" dur="12s" repeatCount="indefinite" calcMode="linear"
+      keyTimes="0;0.14;0.24;0.32;1" keyPoints="0;0.5;0.5;1;1"/>
+    <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.88;0.92;1" dur="12s" repeatCount="indefinite"/>
+  </circle>
+
+  <text x="420" y="240" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#8b949e">two callers blocked, zero extra backing fetches
+    <animate attributeName="opacity" values="0;0;1;1;1;0;0" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+  </text>
+
+  <!-- back-fill -->
+  <circle r="7" fill="#c9922f">
+    <animateMotion path="M 760 92 H 250" dur="12s" repeatCount="indefinite" calcMode="linear"
+      keyTimes="0;0.70;0.78;0.83;0.92;1" keyPoints="0;0;0.333;0.333;1;1"/>
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.69;0.70;0.93;0.95;1" dur="12s" repeatCount="indefinite"/>
+  </circle>
+  <path d="M 760 92 H 250" stroke="#c9922f" stroke-width="1" stroke-dasharray="4 5" fill="none">
+    <animate attributeName="opacity" values="0;0;0;0;0;1;1" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+  </path>
+
+  <!-- captions -->
+  <g font-family="Helvetica, Arial, sans-serif" font-size="14">
+    <text x="20" y="278" fill="#8b949e">Three concurrent GETs for the same hot key arrive at one instance
+      <animate attributeName="opacity" values="1;0;0;0;0;0;0" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+    </text>
+    <text x="20" y="278" fill="#c9922f">L1 LRU is checked first, with no network and no coordination &#8212; all three miss
+      <animate attributeName="opacity" values="0;1;0;0;0;0;0" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+    </text>
+    <text x="20" y="278" fill="#c9922f">Coalescer.Do: the first caller owns the fetch, the rest wait on its WaitGroup
+      <animate attributeName="opacity" values="0;0;1;0;0;0;0" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+    </text>
+    <text x="20" y="278" fill="#c9922f">L2 Redis is asked once for the whole wave &#8212; miss
+      <animate attributeName="opacity" values="0;0;0;1;0;0;0" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+    </text>
+    <text x="20" y="278" fill="#c9922f">L3 Cassandra answers: one query instead of a stampede
+      <animate attributeName="opacity" values="0;0;0;0;1;0;0" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+    </text>
+    <text x="20" y="278" fill="#c9922f">Back-fill L2 with a TTL, then L1, then fan the value out to every waiter
+      <animate attributeName="opacity" values="0;0;0;0;0;1;1" keyTimes="0;0.10;0.28;0.44;0.60;0.70;0.90" calcMode="discrete" dur="12s" repeatCount="indefinite"/>
+    </text>
+  </g>
+
+  <text x="20" y="308" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#8b949e">Writes run the other way: Cassandra first, then Redis, then the local LRU, so no tier can serve a value staler than the store.</text>
+</svg>
